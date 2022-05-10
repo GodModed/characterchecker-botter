@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer');
 const handleError = require('./logger');
 const { createSpinner } = require('nanospinner');
 
-var THREADS = 3;
+var THREADS = 3; //recomend 2-5
 
 const baseURL = 'https://characterchecker.com/';
 
@@ -20,13 +20,22 @@ async function main() {
             defaultViewport: null
         });
         const page = await browser.newPage();
+        // await page.setRequestInterception(true);
+        // page.on('request', (req) => {
+        //     if (req.resourceType() === 'image' || req.resourceType() === 'stylesheet' || req.resourceType() === 'font') {
+        //         req.abort();
+        //     }
+        //     else {
+        //         req.continue();
+        //     }
+        // });
         await page.goto(baseURL);
         await page.type('#text', 'а');
         await page.click('#btn');
         await page.waitForSelector('#result');
         sent++;
         await browser.close();
-        await main(); 
+        await main();
     } catch (e) {
         handleError(e, main);
     }
@@ -45,7 +54,7 @@ async function updateSpinner() {
     spinner.update({
         text: `${sent} Clicks @ ${Math.round(sent / ((new Date() - START) / 1000) * 60)} Clicks/min`,
     })
-    await sleep(1000);
+    await sleep(100);
     await updateSpinner();
 }
 
