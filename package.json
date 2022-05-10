@@ -10,6 +10,7 @@
   "author": "godModeD",
   "license": "MIT",
   "dependencies": {
+    "nanospinner": "^1.1.0",
     "puppeteer": "^14.0.0"
   }
 }
