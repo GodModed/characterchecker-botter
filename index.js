@@ -1,61 +1,66 @@
-console.clear();
+const puppeteer = require('puppeteer')
+const minimal_args = require('./args')
+const spinner = require('nanospinner').createSpinner('Loading...').start();
+const logger = require('./logger');
 
-const puppeteer = require('puppeteer');
-const handleError = require('./logger');
-const { createSpinner } = require('nanospinner');
+let browser;
 
-var THREADS = 3; //recomend 2-5
-
+var date;
+var sent = 0;
+var THREADS = 5;
 const baseURL = 'https://characterchecker.com/';
 
-var START = new Date();
-var sent = 0;
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-const spinner = createSpinner('Loading...').start();
-//goto baseURL with puppeteer
-async function main() {
+browserStart();
+
+async function browserStart() {
+    browser = await puppeteer.launch({
+        headless: true,
+        defaultViewport: null,
+        // run puppeteer with minimal settings
+        args: minimal_args
+    })
+    date = new Date();
+    for (let i = 0; i < THREADS; i++) {
+        createPage();
+    }
+}
+
+//get every process id that puppeteer makes
+
+async function createPage() {
     try {
-        const browser = await puppeteer.launch({
-            headless: true,
-            defaultViewport: null
-        });
-        const page = await browser.newPage();
-        // await page.setRequestInterception(true);
-        // page.on('request', (req) => {
-        //     if (req.resourceType() === 'image' || req.resourceType() === 'stylesheet' || req.resourceType() === 'font') {
-        //         req.abort();
-        //     }
-        //     else {
-        //         req.continue();
-        //     }
-        // });
+        let page = await browser.newPage();
         await page.goto(baseURL);
         await page.type('#text', 'а');
         await page.click('#btn');
         await page.waitForSelector('#result');
         sent++;
-        await browser.close();
-        await main();
+        await page.close();
+        await createPage();
+        backupPage = page;
     } catch (e) {
-        handleError(e, main);
+        logger(e, createPage);
     }
-}
-
-for (let i = 0; i < THREADS; i++) {
-    main();
-}
-
-//sleep function
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function updateSpinner() {
     spinner.update({
-        text: `${sent} Clicks @ ${Math.round(sent / ((new Date() - START) / 1000) * 60)} Clicks/min`,
+        text: `${sent} Clicks @ ${(sent / ((new Date() - date) / 1000) * 60).toFixed(1)} Clicks/min`,
     })
     await sleep(100);
     await updateSpinner();
 }
 
 updateSpinner();
+
+//process.on signit
+process.on('SIGINT', async () => {
+    spinner.stop();
+    browser.close();
+    console.log('Ending process peacefully...');
+    process.exit(0);
+})
