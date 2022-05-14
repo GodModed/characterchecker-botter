@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer')
 const minimal_args = require('./args')
 const spinner = require('nanospinner').createSpinner('Loading...').start();
 const logger = require('./logger');
+var killProcess = require('kill-process-by-name');
 
 let browser;
 
@@ -61,6 +62,7 @@ updateSpinner();
 process.on('SIGINT', async () => {
     spinner.stop();
     browser.close();
+    killProcess('Chromium');
     console.log('Ending process peacefully...');
     process.exit(0);
 })
